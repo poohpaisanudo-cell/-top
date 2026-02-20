@@ -1,0 +1,122 @@
+<!DOCTYPE html> 
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <title>Workshop #6: File Management</title> 
+    <style> 
+        body { font-family: sans-serif; text-align: center; padding: 20px; background-color: #f4f4f9; } 
+        .container { max-width: 600px; margin: auto; border: solid 1px #ccc; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); } 
+        input, button { margin: 10px; padding: 8px 15px; cursor: pointer; } 
+        button { border-radius: 5px; border: 1px solid #ddd; }
+        .btn-upload { background-color: #28a745; color: white; border: none; }
+        .btn-delete { color: white; background-color: #dc3545; border: none; padding: 4px 10px; font-size: 0.75rem; }
+        ul { list-style: none; padding: 0; text-align: left; } 
+        li { margin: 10px 0; padding: 10px; background: #fff; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; } 
+        a { text-decoration: none; color: #007bff; font-weight: bold; } 
+        #previewContainer img { max-width: 200px; border-radius: 8px; margin: 10px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+    </style> 
+</head> 
+<body> 
+    <div class="container">
+        <h3>Workshop #6: Upload & Download System</h3> 
+        
+        <input type="file" id="fileInput" onchange="previewFile()"> 
+        <div id="previewContainer"></div> 
+        
+        <button class="btn-upload" onclick="uploadFile()">Upload File</button> 
+        <p id="uploadStatus" style="font-weight: bold; color: green;"></p> 
+
+        <hr>
+        
+        <h3>Files on Server</h3> 
+        <ul id="fileList"></ul> 
+    </div> 
+
+    <script> 
+        const serverUrl = 'http://localhost:5000'; 
+
+        // 1. แสดงตัวอย่างไฟล์ภาพก่อนอัปโหลด
+        function previewFile() {
+            const file = document.getElementById('fileInput').files[0];
+            const previewContainer = document.getElementById('previewContainer');
+            previewContainer.innerHTML = ''; 
+
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    previewContainer.appendChild(img);
+                }
+                reader.readAsDataURL(file);
+            } else if (file) {
+                previewContainer.innerHTML = `<p style="color: gray;">(ไฟล์ ${file.name} ไม่ใช่รูปภาพ จึงไม่มีตัวอย่างแสดง)</p>`;
+            }
+        }
+
+        // 2. อัปโหลดไฟล์
+        function uploadFile() { 
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0]; 
+            if (!file) return alert('โปรดเลือกไฟล์ก่อนครับ'); 
+
+            const formData = new FormData(); 
+            formData.append('file', file); 
+
+            fetch(`${serverUrl}/upload`, { method: 'POST', body: formData }) 
+                .then(response => response.json()) 
+                .then(data => { 
+                    document.getElementById('uploadStatus').textContent = '✅ ' + data.message; 
+                    document.getElementById('previewContainer').innerHTML = ''; // ล้างรูปตัวอย่าง
+                    fileInput.value = ''; // ล้างช่องเลือกไฟล์
+                    loadFileList(); // โหลดรายการใหม่ 
+                }) 
+                .catch(error => console.error('Upload error:', error)); 
+        } 
+
+        // 3. แสดงรายการไฟล์และปุ่มลบ
+        function loadFileList() { 
+            fetch(`${serverUrl}/files`) 
+                .then(response => response.json()) 
+                .then(files => { 
+                    const fileList = document.getElementById('fileList'); 
+                    fileList.innerHTML = ''; 
+                    if (files.length === 0) {
+                        fileList.innerHTML = '<p style="text-align:center; color:gray;">ยังไม่มีไฟล์บนเซิร์ฟเวอร์</p>';
+                    }
+                    files.forEach(file => { 
+                        const li = document.createElement('li'); 
+                        li.innerHTML = `
+                            <a href="${serverUrl}/download/${file}" download>${file}</a>
+                            <button class="btn-delete" onclick="deleteFile('${file}')">ลบไฟล์</button>
+                        `; 
+                        fileList.appendChild(li); 
+                    }); 
+                }) 
+                .catch(error => console.error('Error loading file list:', error)); 
+        } 
+
+        // 4. ลบไฟล์พร้อมแจ้งยืนยัน
+        function deleteFile(filename) {
+    if (confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบไฟล์: ${filename}?`)) {
+        // ใช้ encodeURIComponent เพื่อป้องกันปัญหาชื่อไฟล์ภาษาไทย/อักขระพิเศษ
+        fetch(`${serverUrl}/delete/${encodeURIComponent(filename)}`, { method: 'DELETE' })
+            .then(res => {
+                if (!res.ok) throw new Error('Network response was not ok');
+                return res.json();
+            })
+            .then(data => {
+                alert(data.message);
+                loadFileList();
+            })
+            .catch(err => console.error('Delete error:', err));
+    }
+}
+        
+
+        // โหลดรายการไฟล์ทันทีที่เปิดหน้าเว็บ
+        loadFileList(); 
+    </script> 
+</body> 
+</html>
