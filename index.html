@@ -3,40 +3,168 @@
 <head> 
     <meta charset="UTF-8"> 
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-    <title>Workshop #6: File Management</title> 
+    <title>Workshop #6: Dark Management</title> 
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600&display=swap" rel="stylesheet">
     <style> 
-        body { font-family: sans-serif; text-align: center; padding: 20px; background-color: #f4f4f9; } 
-        .container { max-width: 600px; margin: auto; border: solid 1px #ccc; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); } 
-        input, button { margin: 10px; padding: 8px 15px; cursor: pointer; } 
-        button { border-radius: 5px; border: 1px solid #ddd; }
-        .btn-upload { background-color: #28a745; color: white; border: none; }
-        .btn-delete { color: white; background-color: #dc3545; border: none; padding: 4px 10px; font-size: 0.75rem; }
-        ul { list-style: none; padding: 0; text-align: left; } 
-        li { margin: 10px 0; padding: 10px; background: #fff; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; } 
-        a { text-decoration: none; color: #007bff; font-weight: bold; } 
-        #previewContainer img { max-width: 200px; border-radius: 8px; margin: 10px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        :root {
+            --bg-main: #0f172a; /* Midnight Blue */
+            --bg-card: #1e293b;
+            --accent-gradient: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --danger: #fb7185;
+            --success: #4ade80;
+        }
+
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: var(--bg-main); 
+            color: var(--text-primary);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        } 
+
+        .container { 
+            width: 90%;
+            max-width: 480px; 
+            padding: 2.5rem; 
+            background: var(--bg-card); 
+            border-radius: 24px; 
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        } 
+
+        h2 { 
+            margin-top: 0; 
+            font-size: 1.5rem;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .upload-area {
+            background: rgba(15, 23, 42, 0.5);
+            padding: 24px;
+            border-radius: 16px;
+            border: 2px dashed #334155;
+            text-align: center;
+            margin-bottom: 24px;
+            transition: border-color 0.3s;
+        }
+
+        .upload-area:hover {
+            border-color: #818cf8;
+        }
+
+        input[type="file"] { 
+            display: block;
+            width: 100%;
+            margin-bottom: 15px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        button { 
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer; 
+            border-radius: 12px;
+            border: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-upload { 
+            width: 100%;
+            padding: 14px;
+            background: var(--accent-gradient); 
+            color: white; 
+            font-size: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(129, 140, 248, 0.3);
+        }
+
+        .btn-upload:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 15px 20px -3px rgba(129, 140, 248, 0.4);
+        }
+
+        .btn-delete { 
+            background: rgba(251, 113, 133, 0.1);
+            color: var(--danger);
+            padding: 8px 16px; 
+            font-size: 0.8rem; 
+        }
+
+        .btn-delete:hover { 
+            background: var(--danger);
+            color: white;
+        }
+
+        #previewContainer img { 
+            max-width: 100%; 
+            border-radius: 12px; 
+            margin-top: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        ul { list-style: none; padding: 0; margin-top: 20px; } 
+
+        li { 
+            margin-bottom: 10px; 
+            padding: 14px; 
+            background: rgba(255, 255, 255, 0.03); 
+            border-radius: 12px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        } 
+
+        .file-link { 
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+
+        .file-link:hover { color: #818cf8; }
+
+        #uploadStatus { font-size: 0.8rem; margin-top: 12px; text-align: center; }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style> 
 </head> 
 <body> 
     <div class="container">
-        <h3>Workshop #6: Upload & Download System</h3> 
+        <h2>🚀 Cloud Drive Lite</h2> 
         
-        <input type="file" id="fileInput" onchange="previewFile()"> 
-        <div id="previewContainer"></div> 
-        
-        <button class="btn-upload" onclick="uploadFile()">Upload File</button> 
-        <p id="uploadStatus" style="font-weight: bold; color: green;"></p> 
+        <div class="upload-area">
+            <input type="file" id="fileInput" onchange="previewFile()"> 
+            <div id="previewContainer"></div> 
+            <button class="btn-upload" onclick="uploadFile()">Upload Now</button> 
+            <p id="uploadStatus"></p> 
+        </div>
 
-        <hr>
-        
-        <h3>Files on Server</h3> 
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.9rem; font-weight: 600;">Files</span>
+            <span style="font-size: 0.75rem; color: var(--text-secondary);" id="fileCount">0 items</span>
+        </div>
+
         <ul id="fileList"></ul> 
     </div> 
 
     <script> 
         const serverUrl = 'http://localhost:5000'; 
 
-        // 1. แสดงตัวอย่างไฟล์ภาพก่อนอัปโหลด
         function previewFile() {
             const file = document.getElementById('fileInput').files[0];
             const previewContainer = document.getElementById('previewContainer');
@@ -44,78 +172,61 @@
 
             if (file && file.type.startsWith('image/')) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    previewContainer.appendChild(img);
+                reader.onload = (e) => {
+                    previewContainer.innerHTML = `<img src="${e.target.result}">`;
                 }
                 reader.readAsDataURL(file);
             } else if (file) {
-                previewContainer.innerHTML = `<p style="color: gray;">(ไฟล์ ${file.name} ไม่ใช่รูปภาพ จึงไม่มีตัวอย่างแสดง)</p>`;
+                previewContainer.innerHTML = `<p style="color: var(--text-secondary); font-size: 0.8rem;">📄 ${file.name}</p>`;
             }
         }
 
-        // 2. อัปโหลดไฟล์
         function uploadFile() { 
             const fileInput = document.getElementById('fileInput');
             const file = fileInput.files[0]; 
-            if (!file) return alert('โปรดเลือกไฟล์ก่อนครับ'); 
+            if (!file) return; 
 
             const formData = new FormData(); 
             formData.append('file', file); 
 
             fetch(`${serverUrl}/upload`, { method: 'POST', body: formData }) 
-                .then(response => response.json()) 
+                .then(res => res.json()) 
                 .then(data => { 
-                    document.getElementById('uploadStatus').textContent = '✅ ' + data.message; 
-                    document.getElementById('previewContainer').innerHTML = ''; // ล้างรูปตัวอย่าง
-                    fileInput.value = ''; // ล้างช่องเลือกไฟล์
-                    loadFileList(); // โหลดรายการใหม่ 
-                }) 
-                .catch(error => console.error('Upload error:', error)); 
+                    const status = document.getElementById('uploadStatus');
+                    status.textContent = 'Uploaded successfully!'; 
+                    status.style.color = 'var(--success)';
+                    document.getElementById('previewContainer').innerHTML = '';
+                    fileInput.value = ''; 
+                    loadFileList(); 
+                    setTimeout(() => status.textContent = '', 3000);
+                });
         } 
 
-        // 3. แสดงรายการไฟล์และปุ่มลบ
         function loadFileList() { 
             fetch(`${serverUrl}/files`) 
-                .then(response => response.json()) 
+                .then(res => res.json()) 
                 .then(files => { 
                     const fileList = document.getElementById('fileList'); 
-                    fileList.innerHTML = ''; 
-                    if (files.length === 0) {
-                        fileList.innerHTML = '<p style="text-align:center; color:gray;">ยังไม่มีไฟล์บนเซิร์ฟเวอร์</p>';
-                    }
+                    document.getElementById('fileCount').textContent = `${files.length} items`;
+                    fileList.innerHTML = files.length ? '' : '<p style="color:var(--text-secondary); font-size:0.8rem; text-align:center;">Empty folder</p>'; 
                     files.forEach(file => { 
                         const li = document.createElement('li'); 
                         li.innerHTML = `
-                            <a href="${serverUrl}/download/${file}" download>${file}</a>
-                            <button class="btn-delete" onclick="deleteFile('${file}')">ลบไฟล์</button>
+                            <a class="file-link" href="${serverUrl}/download/${file}" download>${file}</a>
+                            <button class="btn-delete" onclick="deleteFile('${file}')">Delete</button>
                         `; 
                         fileList.appendChild(li); 
                     }); 
-                }) 
-                .catch(error => console.error('Error loading file list:', error)); 
+                }); 
         } 
 
-        // 4. ลบไฟล์พร้อมแจ้งยืนยัน
         function deleteFile(filename) {
-    if (confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบไฟล์: ${filename}?`)) {
-        // ใช้ encodeURIComponent เพื่อป้องกันปัญหาชื่อไฟล์ภาษาไทย/อักขระพิเศษ
-        fetch(`${serverUrl}/delete/${encodeURIComponent(filename)}`, { method: 'DELETE' })
-            .then(res => {
-                if (!res.ok) throw new Error('Network response was not ok');
-                return res.json();
-            })
-            .then(data => {
-                alert(data.message);
-                loadFileList();
-            })
-            .catch(err => console.error('Delete error:', err));
-    }
-}
-        
+            if (confirm(`Delete ${filename}?`)) {
+                fetch(`${serverUrl}/delete/${encodeURIComponent(filename)}`, { method: 'DELETE' })
+                    .then(() => loadFileList());
+            }
+        }
 
-        // โหลดรายการไฟล์ทันทีที่เปิดหน้าเว็บ
         loadFileList(); 
     </script> 
 </body> 
