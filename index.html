@@ -7,7 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600&display=swap" rel="stylesheet">
     <style> 
         :root {
-            --bg-main: #0f172a; /* Midnight Blue */
+            --bg-main: #0f172a; 
             --bg-card: #1e293b;
             --accent-gradient: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
             --text-primary: #f8fafc;
@@ -145,6 +145,15 @@
 </head> 
 <body> 
     <div class="container">
+        <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.9rem; font-weight: 600;">👤 เข้าใช้งานในฐานะ:</span>
+            <select id="userRole" onchange="loadFileList()" style="padding: 8px; border-radius: 8px; background: var(--bg-main); color: white; border: 1px solid #334155; outline: none;">
+                <option value="user1">👨‍💻 User 1</option>
+                <option value="user2">👩‍💻 User 2</option>
+                <option value="admin">👑 Admin</option>
+            </select>
+        </div>
+
         <h2>🚀 Cloud Drive Lite</h2> 
         
         <div class="upload-area">
@@ -184,9 +193,15 @@
         function uploadFile() { 
             const fileInput = document.getElementById('fileInput');
             const file = fileInput.files[0]; 
-            if (!file) return; 
+            const currentUser = document.getElementById('userRole').value;
+
+            if (!file) {
+                alert("กรุณาเลือกไฟล์ก่อนอัปโหลด");
+                return;
+            }
 
             const formData = new FormData(); 
+            formData.append('username', currentUser); 
             formData.append('file', file); 
 
             fetch(`${serverUrl}/upload`, { method: 'POST', body: formData }) 
@@ -199,20 +214,26 @@
                     fileInput.value = ''; 
                     loadFileList(); 
                     setTimeout(() => status.textContent = '', 3000);
-                });
+                })
+                .catch(err => alert("เกิดข้อผิดพลาดในการอัปโหลด"));
         } 
 
         function loadFileList() { 
-            fetch(`${serverUrl}/files`) 
+            const currentUser = document.getElementById('userRole').value;
+
+            fetch(`${serverUrl}/files?user=${currentUser}`) 
                 .then(res => res.json()) 
                 .then(files => { 
                     const fileList = document.getElementById('fileList'); 
                     document.getElementById('fileCount').textContent = `${files.length} items`;
                     fileList.innerHTML = files.length ? '' : '<p style="color:var(--text-secondary); font-size:0.8rem; text-align:center;">Empty folder</p>'; 
+                    
                     files.forEach(file => { 
+                        const displayName = file.split('-').slice(2).join('-') || file;
+
                         const li = document.createElement('li'); 
                         li.innerHTML = `
-                            <a class="file-link" href="${serverUrl}/download/${file}" download>${file}</a>
+                            <a class="file-link" href="${serverUrl}/download/${file}" download title="${file}">${displayName}</a>
                             <button class="btn-delete" onclick="deleteFile('${file}')">Delete</button>
                         `; 
                         fileList.appendChild(li); 
@@ -221,9 +242,19 @@
         } 
 
         function deleteFile(filename) {
-            if (confirm(`Delete ${filename}?`)) {
-                fetch(`${serverUrl}/delete/${encodeURIComponent(filename)}`, { method: 'DELETE' })
-                    .then(() => loadFileList());
+            const currentUser = document.getElementById('userRole').value;
+
+            if (confirm(`คุณต้องการลบไฟล์นี้ใช่หรือไม่?`)) {
+                fetch(`${serverUrl}/delete/${encodeURIComponent(filename)}?user=${currentUser}`, { method: 'DELETE' })
+                    .then(async (res) => {
+                        if (!res.ok) {
+                            const data = await res.json();
+                            throw new Error(data.error);
+                        }
+                        return res.json();
+                    })
+                    .then(() => loadFileList())
+                    .catch(err => alert(err.message));
             }
         }
 
