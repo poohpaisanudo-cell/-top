@@ -156,6 +156,19 @@
 
         <h2>🚀 Cloud Drive Lite</h2> 
         
+        <div id="adminPanel" style="display: none; background: rgba(255,165,0,0.1); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(255,165,0,0.3);">
+            <h3 style="margin-top: 0; font-size: 1rem;">👑 Admin Panel</h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">Delete all files from a user:</p>
+            <div style="display: flex; gap: 8px;">
+                <select id="userToDelete" style="flex: 1; padding: 8px; border-radius: 8px; background: var(--bg-main); color: white; border: 1px solid #334155; outline: none;">
+                    <option value="">Select user...</option>
+                    <option value="user1">👨‍💻 User 1</option>
+                    <option value="user2">👩‍💻 User 2</option>
+                </select>
+                <button class="btn-delete" onclick="deleteAllUserFiles()" style="padding: 8px 12px; white-space: nowrap;">Delete All</button>
+            </div>
+        </div>
+        
         <div class="upload-area">
             <input type="file" id="fileInput" onchange="previewFile()"> 
             <div id="previewContainer"></div> 
@@ -173,7 +186,7 @@
     </div> 
 
     <script> 
-        const serverUrl = 'http://localhost:5000'; 
+        const serverUrl = `http://${window.location.hostname}:5000`; 
 
         function previewFile() {
             const file = document.getElementById('fileInput').files[0];
@@ -245,6 +258,13 @@
         } 
         function loadFileList() { 
             const currentUser = document.getElementById('userRole').value;
+            const adminPanel = document.getElementById('adminPanel');
+            
+            if (currentUser === 'admin') {
+                adminPanel.style.display = 'block';
+            } else {
+                adminPanel.style.display = 'none';
+            }
 
             fetch(`${serverUrl}/files?user=${currentUser}`) 
                 .then(res => res.json()) 
@@ -290,6 +310,33 @@
                         return res.json();
                     })
                     .then(() => loadFileList())
+                    .catch(err => alert(err.message));
+            }
+        }
+
+        function deleteAllUserFiles() {
+            const userToDelete = document.getElementById('userToDelete').value;
+            const currentUser = document.getElementById('userRole').value;
+
+            if (!userToDelete) {
+                alert('Please select a user');
+                return;
+            }
+
+            if (confirm(`ลบไฟล์ทั้งหมดของ ${userToDelete} ใช่หรือไม่?`)) {
+                fetch(`${serverUrl}/deleteUserFiles/${userToDelete}?user=${currentUser}`, { method: 'DELETE' })
+                    .then(async (res) => {
+                        if (!res.ok) {
+                            const data = await res.json();
+                            throw new Error(data.error);
+                        }
+                        return res.json();
+                    })
+                    .then((data) => {
+                        alert(`ลบไฟล์สำเร็จแล้ว: ${data.deletedCount} ไฟล์`);
+                        document.getElementById('userToDelete').value = '';
+                        loadFileList();
+                    })
                     .catch(err => alert(err.message));
             }
         }
