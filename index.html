@@ -18,7 +18,7 @@
             margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh;
         } 
         .container { 
-            width: 90%; max-width: 480px; padding: 2.5rem; 
+            width: 90%; max-width: 520px; padding: 2.5rem; 
             background: var(--bg-card); border-radius: 24px; 
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(255, 255, 255, 0.05);
@@ -27,12 +27,12 @@
             margin-top: 0; font-size: 1.5rem; text-align: center; margin-bottom: 1.5rem;
             background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
-        input.form-control {
+        input.form-control, select.form-control {
             width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px;
             background: rgba(15, 23, 42, 0.5); color: white; border: 1px solid #334155;
             box-sizing: border-box; outline: none; font-family: inherit;
         }
-        input.form-control:focus { border-color: #818cf8; }
+        input.form-control:focus, select.form-control:focus { border-color: #818cf8; }
         .upload-area {
             background: rgba(15, 23, 42, 0.5); padding: 24px; border-radius: 16px;
             border: 2px dashed #334155; text-align: center; margin-bottom: 24px; transition: border-color 0.3s;
@@ -53,8 +53,9 @@
             margin-bottom: 10px; padding: 14px; background: rgba(255, 255, 255, 0.03); 
             border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255, 255, 255, 0.05);
         } 
-        .file-link { color: var(--text-primary); text-decoration: none; font-size: 0.9rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+        .file-link { color: var(--text-primary); text-decoration: none; font-size: 0.9rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px; display: inline-block; vertical-align: middle; }
         .file-link:hover { color: #818cf8; }
+        .owner-badge { background: rgba(192, 132, 252, 0.2); color: #c084fc; padding: 3px 8px; border-radius: 6px; font-size: 0.7rem; margin-right: 10px; font-weight: bold; border: 1px solid rgba(192, 132, 252, 0.3);}
         #uploadStatus { font-size: 0.8rem; margin-top: 12px; text-align: center; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
@@ -72,22 +73,20 @@
 
     <div class="container" id="appScreen" style="display: none;">
         <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 0.9rem; font-weight: 600;">👤 เข้าใช้งานในฐานะ: <span id="displayUser" style="color: #c084fc;"></span></span>
+            <span style="font-size: 0.9rem; font-weight: 600;">👤 ผู้ใช้งาน: <span id="displayUser" style="color: #c084fc;"></span></span>
             <button onclick="handleLogout()" style="background: transparent; color: var(--text-secondary); border: 1px solid #334155; padding: 6px 12px; border-radius: 8px;">Logout</button>
         </div>
 
         <h2>🚀 Cloud Drive Lite</h2> 
         
-        <div id="adminPanel" style="display: none; background: rgba(255,165,0,0.1); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(255,165,0,0.3);">
-            <h3 style="margin-top: 0; font-size: 1rem;">👑 Admin Panel</h3>
-            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">Delete all files from a user:</p>
+        <div id="adminPanel" style="display: none; background: rgba(251, 113, 133, 0.1); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(251, 113, 133, 0.3);">
+            <h3 style="margin-top: 0; font-size: 1rem; color: var(--danger);">👑 Admin: User Management</h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">แบนผู้ใช้และลบไฟล์ทั้งหมดของคนนั้น:</p>
             <div style="display: flex; gap: 8px;">
-                <select id="userToDelete" class="form-control" style="margin-bottom: 0;">
-                    <option value="">Select user...</option>
-                    <option value="user1">👨‍💻 User 1</option>
-                    <option value="user2">👩‍💻 User 2</option>
+                <select id="userToBan" class="form-control" style="margin-bottom: 0;">
+                    <option value="">กำลังโหลดรายชื่อ...</option>
                 </select>
-                <button class="btn-delete" onclick="deleteAllUserFiles()">Delete All</button>
+                <button class="btn-delete" onclick="banUser()" style="white-space: nowrap;">ลบบัญชี 🚫</button>
             </div>
         </div>
         
@@ -109,7 +108,6 @@
     <script> 
         const serverUrl = window.location.origin; 
         
-        // --- ส่วนของระบบ Login ---
         function checkLoginState() {
             const loggedInUser = localStorage.getItem('currentUser');
             if (loggedInUser) {
@@ -134,13 +132,12 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: user, password: pass })
                 });
-
                 const data = await res.json();
 
                 if (res.ok) {
-                    localStorage.setItem('currentUser', data.username); // บันทึกสิทธิ์ลงเบราว์เซอร์
+                    localStorage.setItem('currentUser', data.username); 
                     errorText.style.display = 'none';
-                    checkLoginState(); // โหลดหน้าเว็บใหม่
+                    checkLoginState(); 
                 } else {
                     errorText.textContent = data.error;
                     errorText.style.display = 'block';
@@ -152,18 +149,16 @@
         }
 
         function handleLogout() {
-            localStorage.removeItem('currentUser'); // ล้างสิทธิ์การเข้าสู่ระบบ
+            localStorage.removeItem('currentUser'); 
             document.getElementById('username').value = '';
             document.getElementById('password').value = '';
             checkLoginState();
         }
-        // ------------------------
 
         function previewFile() {
             const file = document.getElementById('fileInput').files[0];
             const previewContainer = document.getElementById('previewContainer');
             previewContainer.innerHTML = ''; 
-
             if (file && file.type.startsWith('image/')) {
                 const reader = new FileReader();
                 reader.onload = (e) => { previewContainer.innerHTML = `<img src="${e.target.result}">`; }
@@ -175,7 +170,7 @@
 
         function uploadFile() { 
             const file = document.getElementById('fileInput').files[0]; 
-            const currentUser = localStorage.getItem('currentUser'); // ดึงชื่อ User จากระบบแทน
+            const currentUser = localStorage.getItem('currentUser'); 
 
             if (!file) return alert("กรุณาเลือกไฟล์ก่อนอัปโหลด");
 
@@ -216,34 +211,49 @@
             const currentUser = localStorage.getItem('currentUser');
             const adminPanel = document.getElementById('adminPanel');
             
-            adminPanel.style.display = (currentUser === 'admin') ? 'block' : 'none';
+            // แสดง Admin Panel และดึงรายชื่อ Users
+            if (currentUser === 'admin') {
+                adminPanel.style.display = 'block';
+                fetch(`${serverUrl}/users?user=admin`)
+                    .then(res => res.json())
+                    .then(users => {
+                        const select = document.getElementById('userToBan');
+                        select.innerHTML = '<option value="">เลือก User ที่ต้องการจัดการ...</option>';
+                        users.forEach(u => select.innerHTML += `<option value="${u}">👤 ${u}</option>`);
+                    });
+            } else {
+                adminPanel.style.display = 'none';
+            }
 
             fetch(`${serverUrl}/files?user=${currentUser}`) 
                 .then(res => res.json()) 
                 .then(files => { 
                     const fileList = document.getElementById('fileList'); 
                     document.getElementById('fileCount').textContent = `${files.length} items`;
-                    fileList.innerHTML = files.length ? '' : '<p style="color:var(--text-secondary); font-size:0.8rem; text-align:center;">Empty folder</p>'; 
+                    fileList.innerHTML = files.length ? '' : '<p style="color:var(--text-secondary); font-size:0.8rem; text-align:center;">ไม่มีไฟล์ในระบบ</p>'; 
                     
                     files.forEach(file => { 
-                        const displayName = file.split('-').slice(2).join('-') || file;
+                        // แยกชื่อเพื่อดึงเจ้าของไฟล์ออกมา
+                        const nameParts = file.split('-');
+                        const fileOwner = nameParts[0]; // ส่วนแรกคือชื่อ User
+                        const displayName = nameParts.length >= 3 ? nameParts.slice(2).join('-') : file;
+
+                        // ถ้าเป็น Admin ให้โชว์ป้ายชื่อเจ้าของไฟล์ด้วย
+                        let badgeHtml = '';
+                        if (currentUser === 'admin') {
+                            badgeHtml = `<span class="owner-badge">👤 ${fileOwner}</span>`;
+                        }
+
                         const li = document.createElement('li'); 
                         li.innerHTML = `
-                            <a class="file-link" href="${serverUrl}/download/${encodeURIComponent(file)}" download title="${file}">${displayName}</a>
+                            <div style="display: flex; align-items: center; width: 75%; overflow: hidden;">
+                                ${badgeHtml}
+                                <a class="file-link" href="${serverUrl}/download/${encodeURIComponent(file)}" download title="${file}">${displayName}</a>
+                            </div>
                             <button class="btn-delete" onclick="deleteFile('${encodeURIComponent(file)}')">Delete</button>
                         `; 
                         fileList.appendChild(li); 
                     });
-
-                    document.querySelectorAll('.file-link').forEach(link => {
-                        link.addEventListener('click', (e) => {
-                            const filename = decodeURIComponent(link.getAttribute('href').split('/').pop());
-                            if (!filename.startsWith(`${currentUser}-`) && currentUser !== 'admin') {
-                                e.preventDefault();
-                                alert("คุณไม่มีสิทธิ์ดาวน์โหลดไฟล์นี้");
-                            }
-                        });
-                    }); 
                 });
         } 
 
@@ -260,28 +270,27 @@
             }
         }
 
-        function deleteAllUserFiles() {
-            const userToDelete = document.getElementById('userToDelete').value;
+        // ฟังก์ชันใหม่สำหรับ Admin แบนผู้ใช้
+        function banUser() {
+            const targetUser = document.getElementById('userToBan').value;
             const currentUser = localStorage.getItem('currentUser');
 
-            if (!userToDelete) return alert('Please select a user');
+            if (!targetUser) return alert('กรุณาเลือก User ที่ต้องการแบน');
 
-            if (confirm(`ลบไฟล์ทั้งหมดของ ${userToDelete} ใช่หรือไม่?`)) {
-                fetch(`${serverUrl}/deleteUserFiles/${userToDelete}?user=${currentUser}`, { method: 'DELETE' })
+            if (confirm(`⚠️ คำเตือน!\nคุณแน่ใจหรือไม่ที่จะ "แบนบัญชี ${targetUser}" และลบไฟล์ทั้งหมดของเขา?\n(การกระทำนี้ไม่สามารถกู้คืนได้)`)) {
+                fetch(`${serverUrl}/users/${targetUser}?user=${currentUser}`, { method: 'DELETE' })
                     .then(async (res) => {
                         if (!res.ok) throw new Error((await res.json()).error);
                         return res.json();
                     })
                     .then((data) => {
-                        alert(`ลบไฟล์สำเร็จแล้ว: ${data.deletedCount} ไฟล์`);
-                        document.getElementById('userToDelete').value = '';
-                        loadFileList();
+                        alert(`✅ สำเร็จ: ${data.message}`);
+                        loadFileList(); // รีเฟรชหน้าจอใหม่
                     })
-                    .catch(err => alert(err.message));
+                    .catch(err => alert("เกิดข้อผิดพลาด: " + err.message));
             }
         }
 
-        // เช็คสถานะตอนเปิดเว็บครั้งแรก
         checkLoginState(); 
     </script> 
 </body> 

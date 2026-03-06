@@ -11,32 +11,39 @@ const PORT = 5000;
 app.use(cors()); 
 app.use(express.json()); 
 
-// 🔐 ฐานข้อมูลจำลองสำหรับระบบ Login (Username : Password)
-const usersDB = {
-    'user1': 'pass1',
-    'user2': 'pass2',
-    'admin': 'admin123'
-};
+// 🔐 ระบบฐานข้อมูลจำลอง (อ่าน/เขียน ลงไฟล์ users.json)
+const usersFile = path.join(__dirname, 'users.json');
+let usersDB = {};
+
+// ถ้ายังไม่มีไฟล์ users.json ให้สร้างขึ้นมาใหม่พร้อมไอดีเริ่มต้น
+if (fs.existsSync(usersFile)) {
+    usersDB = JSON.parse(fs.readFileSync(usersFile, 'utf8'));
+} else {
+    usersDB = { 'user1': 'pass1', 'user2': 'pass2', 'admin': 'admin123' };
+    fs.writeFileSync(usersFile, JSON.stringify(usersDB, null, 2));
+}
+
+// ฟังก์ชันบันทึกข้อมูล User ลงไฟล์
+function saveUsers() {
+    fs.writeFileSync(usersFile, JSON.stringify(usersDB, null, 2));
+}
 
 function getLocalIP() {
     const interfaces = os.networkInterfaces();
     for (const name of Object.keys(interfaces)) {
         for (const iface of interfaces[name]) {
-            if (iface.family === 'IPv4' && !iface.internal) {
-                return iface.address;
-            }
+            if (iface.family === 'IPv4' && !iface.internal) return iface.address;
         }
     }
     return 'localhost';
 }
 const myIP = getLocalIP();
 
-if (!fs.existsSync('uploads')) {
-    fs.mkdirSync('uploads');
-}
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
 const storage = multer.diskStorage({ 
-    destination: 'uploads/', 
+    destination: uploadDir, 
     filename: (req, file, cb) => { 
         const user = req.body.username || 'unknown';
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -46,29 +53,58 @@ const storage = multer.diskStorage({
 }); 
 const upload = multer({ storage }); 
 
-// 🎯 API สำหรับ Login
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+
+// 🎯 API: Login
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
-    
-    // ตรวจสอบว่ามี username นี้ และรหัสผ่านตรงกันหรือไม่
     if (usersDB[username] && usersDB[username] === password) {
         res.json({ message: 'Login successful', username: username });
     } else {
-        res.status(401).json({ error: 'Username หรือ Password ไม่ถูกต้อง' });
+        res.status(401).json({ error: 'Username หรือ Password ไม่ถูกต้อง (หรือบัญชีนี้ถูกแบน)' });
     }
 });
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+// 🎯 API: ดึงรายชื่อ User ทั้งหมด (เฉพาะ Admin)
+app.get('/users', (req, res) => {
+    if (req.query.user !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
+    // ส่งรายชื่อทั้งหมดกลับไป (ยกเว้น admin เอง)
+    const userList = Object.keys(usersDB).filter(u => u !== 'admin');
+    res.json(userList);
 });
 
+// 🎯 API: แบน/ลบผู้ใช้ และลบไฟล์ทั้งหมด (เฉพาะ Admin)
+app.delete('/users/:username', async (req, res) => {
+    if (req.query.user !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
+    
+    const targetUser = req.params.username;
+    if (targetUser === 'admin') return res.status(400).json({ error: 'ไม่สามารถลบ Admin ได้' });
+    if (!usersDB[targetUser]) return res.status(404).json({ error: 'ไม่พบผู้ใช้นี้ในระบบ' });
+
+    // 1. ลบออกจากฐานข้อมูล (แบน)
+    delete usersDB[targetUser];
+    saveUsers();
+
+    // 2. ลบไฟล์ทั้งหมดของ User นี้
+    try {
+        const files = fs.readdirSync(uploadDir);
+        const userFiles = files.filter(f => f.startsWith(`${targetUser}-`));
+        await Promise.all(userFiles.map(f => fs.promises.unlink(path.join(uploadDir, f))));
+        res.json({ message: `แบนผู้ใช้ ${targetUser} และลบไฟล์ทั้งหมดเรียบร้อยแล้ว` });
+    } catch (err) {
+        res.status(500).json({ error: 'แบนผู้ใช้สำเร็จ แต่มีปัญหาในการลบไฟล์บางส่วน' });
+    }
+});
+
+// 🎯 API: อัปโหลด
 app.post('/upload', upload.single('file'), (req, res) => { 
     res.json({ message: 'File uploaded successfully', filename: req.file.filename }); 
 }); 
 
+// 🎯 API: ดึงรายชื่อไฟล์
 app.get('/files', (req, res) => { 
     const currentUser = req.query.user; 
-    fs.readdir('uploads', (err, files) => { 
+    fs.readdir(uploadDir, (err, files) => { 
         if (err) return res.status(500).json({ error: 'Unable to list files' }); 
         let displayFiles = files;
         if (currentUser !== 'admin') {
@@ -78,20 +114,18 @@ app.get('/files', (req, res) => {
     }); 
 }); 
 
+// 🎯 API: ดาวน์โหลดและลบไฟล์รายตัว
 app.get('/download/:filename', (req, res) => { 
     const safeFilename = path.basename(req.params.filename);
-    const filePath = path.join(__dirname, 'uploads', safeFilename); 
-    if (fs.existsSync(filePath)) {
-        res.download(filePath); 
-    } else {
-        res.status(404).json({ error: 'ไม่พบไฟล์' });
-    }
+    const filePath = path.join(uploadDir, safeFilename); 
+    if (fs.existsSync(filePath)) res.download(filePath); 
+    else res.status(404).json({ error: 'ไม่พบไฟล์' });
 }); 
 
 app.delete('/delete/:filename', (req, res) => {
     const currentUser = req.query.user;
     const safeFilename = path.basename(decodeURIComponent(req.params.filename));
-    const filePath = path.join(__dirname, 'uploads', safeFilename);
+    const filePath = path.join(uploadDir, safeFilename);
 
     if (fs.existsSync(filePath)) {
         if (currentUser !== 'admin' && !safeFilename.startsWith(`${currentUser}-`)) {
@@ -99,55 +133,15 @@ app.delete('/delete/:filename', (req, res) => {
         }
         fs.unlink(filePath, (err) => {
             if (err) return res.status(500).json({ error: 'ลบไฟล์ไม่ได้' });
-            res.json({ message: 'ลบไฟล์สำเร็จแล้ว' });
+            res.json({ message: 'ลบไฟล์สำเร็จ' });
         });
     } else {
-        res.status(404).json({ error: 'ไม่พบไฟล์ที่ต้องการลบ' });
+        res.status(404).json({ error: 'ไม่พบไฟล์' });
     }
-});
-
-app.delete('/deleteUserFiles/:username', (req, res) => {
-    const currentUser = req.query.user;
-    const targetUser = req.params.username;
-
-    if (currentUser !== 'admin') {
-        return res.status(403).json({ error: 'Only admin can delete users' });
-    }
-
-    fs.readdir('uploads', (err, files) => {
-        if (err) return res.status(500).json({ error: 'Unable to read directory' });
-
-        const userFiles = files.filter(file => file.startsWith(`${targetUser}-`));
-        if (userFiles.length === 0) {
-            return res.json({ message: `ลบผู้ใช้ ${targetUser} สำเร็จ (ไม่พบไฟล์ที่เกี่ยวข้องในระบบ)`, deletedCount: 0 });
-        }
-
-        let deletedCount = 0;
-        let errors = [];
-
-        userFiles.forEach((file) => {
-            const filePath = path.join(__dirname, 'uploads', file);
-            fs.unlink(filePath, (err) => {
-                if (err) errors.push(file);
-                else deletedCount++;
-
-                if (deletedCount + errors.length === userFiles.length) {
-                    res.json({ 
-                        message: `ลบผู้ใช้ ${targetUser} และไฟล์ที่เกี่ยวข้องสำเร็จแล้ว`, 
-                        deletedCount: deletedCount,
-                        failedCount: errors.length
-                    });
-                }
-            });
-        });
-    });
 });
 
 app.listen(PORT, '0.0.0.0', () => { 
     console.log(`\n🚀 เริ่มต้นระบบ Cloud Drive Lite สำเร็จ!`); 
-    console.log(`--------------------------------------------------`);
     console.log(`💻 Local:   http://localhost:${PORT}`); 
     console.log(`🌐 Network: http://${myIP}:${PORT}`); 
-    console.log(`--------------------------------------------------\n`);
-    console.log(`[รหัสผ่านสำหรับทดสอบ] user1:pass1 | user2:pass2 | admin:admin123`);
 });
