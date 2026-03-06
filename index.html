@@ -7,151 +7,73 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600&display=swap" rel="stylesheet">
     <style> 
         :root {
-            --bg-main: #0f172a; 
-            --bg-card: #1e293b;
+            --bg-main: #0f172a; --bg-card: #1e293b;
             --accent-gradient: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --danger: #fb7185;
-            --success: #4ade80;
+            --text-primary: #f8fafc; --text-secondary: #94a3b8;
+            --danger: #fb7185; --success: #4ade80;
         }
-
         body { 
             font-family: 'Plus Jakarta Sans', sans-serif; 
-            background-color: var(--bg-main); 
-            color: var(--text-primary);
-            margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
+            background-color: var(--bg-main); color: var(--text-primary);
+            margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh;
         } 
-
         .container { 
-            width: 90%;
-            max-width: 480px; 
-            padding: 2.5rem; 
-            background: var(--bg-card); 
-            border-radius: 24px; 
+            width: 90%; max-width: 480px; padding: 2.5rem; 
+            background: var(--bg-card); border-radius: 24px; 
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(255, 255, 255, 0.05);
         } 
-
         h2 { 
-            margin-top: 0; 
-            font-size: 1.5rem;
-            background: var(--accent-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-align: center;
-            margin-bottom: 1.5rem;
+            margin-top: 0; font-size: 1.5rem; text-align: center; margin-bottom: 1.5rem;
+            background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
-
+        input.form-control {
+            width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px;
+            background: rgba(15, 23, 42, 0.5); color: white; border: 1px solid #334155;
+            box-sizing: border-box; outline: none; font-family: inherit;
+        }
+        input.form-control:focus { border-color: #818cf8; }
         .upload-area {
-            background: rgba(15, 23, 42, 0.5);
-            padding: 24px;
-            border-radius: 16px;
-            border: 2px dashed #334155;
-            text-align: center;
-            margin-bottom: 24px;
-            transition: border-color 0.3s;
+            background: rgba(15, 23, 42, 0.5); padding: 24px; border-radius: 16px;
+            border: 2px dashed #334155; text-align: center; margin-bottom: 24px; transition: border-color 0.3s;
         }
-
-        .upload-area:hover {
-            border-color: #818cf8;
+        .upload-area:hover { border-color: #818cf8; }
+        input[type="file"] { display: block; width: 100%; margin-bottom: 15px; color: var(--text-secondary); font-size: 0.85rem; }
+        button { font-family: inherit; font-weight: 600; cursor: pointer; border-radius: 12px; border: none; transition: all 0.3s ease; }
+        .btn-main { 
+            width: 100%; padding: 14px; background: var(--accent-gradient); color: white; 
+            font-size: 1rem; box-shadow: 0 10px 15px -3px rgba(94, 109, 244, 0.3);
         }
-
-        input[type="file"] { 
-            display: block;
-            width: 100%;
-            margin-bottom: 15px;
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-        }
-
-        button { 
-            font-family: inherit;
-            font-weight: 600;
-            cursor: pointer; 
-            border-radius: 12px;
-            border: none;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .btn-upload { 
-            width: 100%;
-            padding: 14px;
-            background: var(--accent-gradient); 
-            color: white; 
-            font-size: 1rem;
-            box-shadow: 0 10px 15px -3px rgba(94, 109, 244, 0.3);
-        }
-
-        .btn-upload:hover { 
-            transform: translateY(-2px);
-            box-shadow: 0 15px 20px -3px rgba(80, 96, 242, 0.4);
-        }
-
-        .btn-delete { 
-            background: rgba(135, 31, 46, 0.1);
-            color: var(--danger);
-            padding: 8px 16px; 
-            font-size: 0.8rem; 
-        }
-
-        .btn-delete:hover { 
-            background: var(--danger);
-            color: white;
-        }
-
-        #previewContainer img { 
-            max-width: 100%; 
-            border-radius: 12px; 
-            margin-top: 15px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
+        .btn-main:hover { transform: translateY(-2px); box-shadow: 0 15px 20px -3px rgba(80, 96, 242, 0.4); }
+        .btn-delete { background: rgba(135, 31, 46, 0.1); color: var(--danger); padding: 8px 16px; font-size: 0.8rem; }
+        .btn-delete:hover { background: var(--danger); color: white; }
+        #previewContainer img { max-width: 100%; border-radius: 12px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.1); }
         ul { list-style: none; padding: 0; margin-top: 20px; } 
-
         li { 
-            margin-bottom: 10px; 
-            padding: 14px; 
-            background: rgba(255, 255, 255, 0.03); 
-            border-radius: 12px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 10px; padding: 14px; background: rgba(255, 255, 255, 0.03); 
+            border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255, 255, 255, 0.05);
         } 
-
-        .file-link { 
-            color: var(--text-primary);
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 500;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 200px;
-        }
-
+        .file-link { color: var(--text-primary); text-decoration: none; font-size: 0.9rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
         .file-link:hover { color: #818cf8; }
-
         #uploadStatus { font-size: 0.8rem; margin-top: 12px; text-align: center; }
-        
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style> 
 </head> 
 <body> 
-    <div class="container">
+    
+    <div class="container" id="loginScreen">
+        <h2>🔒 Login to Cloud Drive</h2>
+        <input type="text" id="username" class="form-control" placeholder="Username (เช่น user1, admin)">
+        <input type="password" id="password" class="form-control" placeholder="Password">
+        <button class="btn-main" onclick="handleLogin()">Sign In</button>
+        <p id="loginError" style="color: var(--danger); font-size: 0.85rem; text-align: center; display: none; margin-top: 15px;"></p>
+    </div>
+
+    <div class="container" id="appScreen" style="display: none;">
         <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 0.9rem; font-weight: 600;">👤 เข้าใช้งานในฐานะ:</span>
-            <select id="userRole" onchange="loadFileList()" style="padding: 8px; border-radius: 8px; background: var(--bg-main); color: white; border: 1px solid #334155; outline: none;">
-                <option value="user1">👨‍💻 User 1</option>
-                <option value="user2">👩‍💻 User 2</option>
-                <option value="admin">👑 Admin</option>
-            </select>
+            <span style="font-size: 0.9rem; font-weight: 600;">👤 เข้าใช้งานในฐานะ: <span id="displayUser" style="color: #c084fc;"></span></span>
+            <button onclick="handleLogout()" style="background: transparent; color: var(--text-secondary); border: 1px solid #334155; padding: 6px 12px; border-radius: 8px;">Logout</button>
         </div>
 
         <h2>🚀 Cloud Drive Lite</h2> 
@@ -160,20 +82,20 @@
             <h3 style="margin-top: 0; font-size: 1rem;">👑 Admin Panel</h3>
             <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">Delete all files from a user:</p>
             <div style="display: flex; gap: 8px;">
-                <select id="userToDelete" style="flex: 1; padding: 8px; border-radius: 8px; background: var(--bg-main); color: white; border: 1px solid #334155; outline: none;">
+                <select id="userToDelete" class="form-control" style="margin-bottom: 0;">
                     <option value="">Select user...</option>
                     <option value="user1">👨‍💻 User 1</option>
                     <option value="user2">👩‍💻 User 2</option>
                 </select>
-                <button class="btn-delete" onclick="deleteAllUserFiles()" style="padding: 8px 12px; white-space: nowrap;">Delete All</button>
+                <button class="btn-delete" onclick="deleteAllUserFiles()">Delete All</button>
             </div>
         </div>
         
         <div class="upload-area">
             <input type="file" id="fileInput" onchange="previewFile()"> 
             <div id="previewContainer"></div> 
-            <button class="btn-upload" onclick="uploadFile()">Upload Now</button> 
-            <progress id="uploadProgress" value="0" max="100" ref="uploadProgress" style="color: #c084fc;" style="width: 100%; margin-top: 10px;"></progress>
+            <button class="btn-main" onclick="uploadFile()">Upload Now</button> 
+            <progress id="uploadProgress" value="0" max="100" style="width: 100%; margin-top: 10px; accent-color: #c084fc;"></progress>
             <p id="uploadStatus"></p> 
         </div>
 
@@ -181,12 +103,61 @@
             <span style="font-size: 0.9rem; font-weight: 600;">Files</span>
             <span style="font-size: 0.75rem; color: var(--text-secondary);" id="fileCount">0 items</span>
         </div>
-
         <ul id="fileList"></ul> 
     </div> 
 
     <script> 
-        const serverUrl = `http://${window.location.hostname}:5000`; 
+        const serverUrl = window.location.origin; 
+        
+        // --- ส่วนของระบบ Login ---
+        function checkLoginState() {
+            const loggedInUser = localStorage.getItem('currentUser');
+            if (loggedInUser) {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('appScreen').style.display = 'block';
+                document.getElementById('displayUser').textContent = loggedInUser;
+                loadFileList();
+            } else {
+                document.getElementById('loginScreen').style.display = 'block';
+                document.getElementById('appScreen').style.display = 'none';
+            }
+        }
+
+        async function handleLogin() {
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            const errorText = document.getElementById('loginError');
+
+            try {
+                const res = await fetch(`${serverUrl}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user, password: pass })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    localStorage.setItem('currentUser', data.username); // บันทึกสิทธิ์ลงเบราว์เซอร์
+                    errorText.style.display = 'none';
+                    checkLoginState(); // โหลดหน้าเว็บใหม่
+                } else {
+                    errorText.textContent = data.error;
+                    errorText.style.display = 'block';
+                }
+            } catch (err) {
+                errorText.textContent = "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้";
+                errorText.style.display = 'block';
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('currentUser'); // ล้างสิทธิ์การเข้าสู่ระบบ
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            checkLoginState();
+        }
+        // ------------------------
 
         function previewFile() {
             const file = document.getElementById('fileInput').files[0];
@@ -195,9 +166,7 @@
 
             if (file && file.type.startsWith('image/')) {
                 const reader = new FileReader();
-                reader.onload = (e) => {
-                    previewContainer.innerHTML = `<img src="${e.target.result}">`;
-                }
+                reader.onload = (e) => { previewContainer.innerHTML = `<img src="${e.target.result}">`; }
                 reader.readAsDataURL(file);
             } else if (file) {
                 previewContainer.innerHTML = `<p style="color: var(--text-secondary); font-size: 0.8rem;">📄 ${file.name}</p>`;
@@ -205,14 +174,10 @@
         }
 
         function uploadFile() { 
-            const fileInput = document.getElementById('fileInput');
-            const file = fileInput.files[0]; 
-            const currentUser = document.getElementById('userRole').value;
+            const file = document.getElementById('fileInput').files[0]; 
+            const currentUser = localStorage.getItem('currentUser'); // ดึงชื่อ User จากระบบแทน
 
-            if (!file) {
-                alert("กรุณาเลือกไฟล์ก่อนอัปโหลด");
-                return;
-            }
+            if (!file) return alert("กรุณาเลือกไฟล์ก่อนอัปโหลด");
 
             const formData = new FormData(); 
             formData.append('username', currentUser); 
@@ -233,38 +198,25 @@
 
             xhr.addEventListener('load', () => {
                 if (xhr.status === 200) {
-                    const data = JSON.parse(xhr.responseText);
                     statusEl.textContent = 'Uploaded successfully!';
                     statusEl.style.color = 'var(--success)';
                     progressBar.value = 100;
                     document.getElementById('previewContainer').innerHTML = '';
-                    fileInput.value = '';
+                    document.getElementById('fileInput').value = '';
                     loadFileList();
-                    setTimeout(() => {
-                        statusEl.textContent = '';
-                        progressBar.value = 0;
-                    }, 3000);
+                    setTimeout(() => { statusEl.textContent = ''; progressBar.value = 0; }, 3000);
                 }
-            });
-
-            xhr.addEventListener('error', () => {
-                alert('เกิดข้อผิดพลาดในการอัปโหลด');
-                progressBar.value = 0;
-                statusEl.textContent = '';
             });
 
             xhr.open('POST', `${serverUrl}/upload`);
             xhr.send(formData);
         } 
+
         function loadFileList() { 
-            const currentUser = document.getElementById('userRole').value;
+            const currentUser = localStorage.getItem('currentUser');
             const adminPanel = document.getElementById('adminPanel');
             
-            if (currentUser === 'admin') {
-                adminPanel.style.display = 'block';
-            } else {
-                adminPanel.style.display = 'none';
-            }
+            adminPanel.style.display = (currentUser === 'admin') ? 'block' : 'none';
 
             fetch(`${serverUrl}/files?user=${currentUser}`) 
                 .then(res => res.json()) 
@@ -275,38 +227,32 @@
                     
                     files.forEach(file => { 
                         const displayName = file.split('-').slice(2).join('-') || file;
-
                         const li = document.createElement('li'); 
                         li.innerHTML = `
-                            <a class="file-link" href="${serverUrl}/download/${file}" download title="${file}">${displayName}</a>
-                            <button class="btn-delete" onclick="deleteFile('${file}')">Delete</button>
+                            <a class="file-link" href="${serverUrl}/download/${encodeURIComponent(file)}" download title="${file}">${displayName}</a>
+                            <button class="btn-delete" onclick="deleteFile('${encodeURIComponent(file)}')">Delete</button>
                         `; 
                         fileList.appendChild(li); 
                     });
-                });
-                    
-                    const links = document.querySelectorAll('.file-link');
-                    links.forEach(link => {
+
+                    document.querySelectorAll('.file-link').forEach(link => {
                         link.addEventListener('click', (e) => {
-                            const filename = link.getAttribute('href').split('/').pop();
-                            if (!filename.includes(document.getElementById('userRole').value) && document.getElementById('userRole').value !== 'admin') {
+                            const filename = decodeURIComponent(link.getAttribute('href').split('/').pop());
+                            if (!filename.startsWith(`${currentUser}-`) && currentUser !== 'admin') {
                                 e.preventDefault();
                                 alert("คุณไม่มีสิทธิ์ดาวน์โหลดไฟล์นี้");
                             }
                         });
                     }); 
+                });
         } 
 
         function deleteFile(filename) {
-            const currentUser = document.getElementById('userRole').value;
-
+            const currentUser = localStorage.getItem('currentUser');
             if (confirm(`คุณต้องการลบไฟล์นี้ใช่หรือไม่?`)) {
-                fetch(`${serverUrl}/delete/${encodeURIComponent(filename)}?user=${currentUser}`, { method: 'DELETE' })
+                fetch(`${serverUrl}/delete/${filename}?user=${currentUser}`, { method: 'DELETE' })
                     .then(async (res) => {
-                        if (!res.ok) {
-                            const data = await res.json();
-                            throw new Error(data.error);
-                        }
+                        if (!res.ok) throw new Error((await res.json()).error);
                         return res.json();
                     })
                     .then(() => loadFileList())
@@ -316,20 +262,14 @@
 
         function deleteAllUserFiles() {
             const userToDelete = document.getElementById('userToDelete').value;
-            const currentUser = document.getElementById('userRole').value;
+            const currentUser = localStorage.getItem('currentUser');
 
-            if (!userToDelete) {
-                alert('Please select a user');
-                return;
-            }
+            if (!userToDelete) return alert('Please select a user');
 
             if (confirm(`ลบไฟล์ทั้งหมดของ ${userToDelete} ใช่หรือไม่?`)) {
                 fetch(`${serverUrl}/deleteUserFiles/${userToDelete}?user=${currentUser}`, { method: 'DELETE' })
                     .then(async (res) => {
-                        if (!res.ok) {
-                            const data = await res.json();
-                            throw new Error(data.error);
-                        }
+                        if (!res.ok) throw new Error((await res.json()).error);
                         return res.json();
                     })
                     .then((data) => {
@@ -341,7 +281,8 @@
             }
         }
 
-        loadFileList(); 
+        // เช็คสถานะตอนเปิดเว็บครั้งแรก
+        checkLoginState(); 
     </script> 
 </body> 
 </html>
