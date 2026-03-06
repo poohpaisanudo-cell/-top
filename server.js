@@ -4,7 +4,7 @@ const cors = require('cors');
 const fs = require('fs'); 
 const path = require('path'); 
 const app = express(); 
-const port = 5000; 
+const http = 5000; 
 
 app.use(cors()); 
 app.use(express.static('uploads')); 
@@ -72,6 +72,6 @@ app.delete('/delete/:filename', (req, res) => {
     }
 });
 
-app.listen(port, () => { 
-    console.log(`Server running at http://localhost:${port}`); 
+app.listen(http, () => { 
+    console.log(`Server running at http://localhost:${http}`); 
 });
