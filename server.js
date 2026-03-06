@@ -72,6 +72,6 @@ app.delete('/delete/:filename', (req, res) => {
     }
 });
 
-app.listen(http, () => { 
-    console.log(`Server running at http://localhost:${http}`); 
+app.listen(http, '0.0.0.0', () => { 
+    console.log(`Server running at http://0.0.0.0:${http}`); 
 });

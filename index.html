@@ -150,7 +150,6 @@
             <select id="userRole" onchange="loadFileList()" style="padding: 8px; border-radius: 8px; background: var(--bg-main); color: white; border: 1px solid #334155; outline: none;">
                 <option value="user1">👨‍💻 User 1</option>
                 <option value="user2">👩‍💻 User 2</option>
-                <option value="user3">👨‍🔧 User 3</option>
                 <option value="admin">👑 Admin</option>
             </select>
         </div>
@@ -161,6 +160,7 @@
             <input type="file" id="fileInput" onchange="previewFile()"> 
             <div id="previewContainer"></div> 
             <button class="btn-upload" onclick="uploadFile()">Upload Now</button> 
+            <progress id="uploadProgress" value="0" max="100" ref="uploadProgress" style="color: #c084fc;" style="width: 100%; margin-top: 10px;"></progress>
             <p id="uploadStatus"></p> 
         </div>
 
@@ -205,20 +205,44 @@
             formData.append('username', currentUser); 
             formData.append('file', file); 
 
-            fetch(`${serverUrl}/upload`, { method: 'POST', body: formData }) 
-                .then(res => res.json()) 
-                .then(data => { 
-                    const status = document.getElementById('uploadStatus');
-                    status.textContent = 'Uploaded successfully!'; 
-                    status.style.color = 'var(--success)';
-                    document.getElementById('previewContainer').innerHTML = '';
-                    fileInput.value = ''; 
-                    loadFileList(); 
-                    setTimeout(() => status.textContent = '', 3000);
-                })
-                .catch(err => alert("เกิดข้อผิดพลาดในการอัปโหลด"));
-        } 
+            const xhr = new XMLHttpRequest();
+            const progressBar = document.getElementById('uploadProgress');
+            const statusEl = document.getElementById('uploadStatus');
 
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    progressBar.value = percentComplete;
+                    statusEl.textContent = Math.round(percentComplete) + '%';
+                    statusEl.style.color = 'var(--text-secondary)';
+                }
+            });
+
+            xhr.addEventListener('load', () => {
+                if (xhr.status === 200) {
+                    const data = JSON.parse(xhr.responseText);
+                    statusEl.textContent = 'Uploaded successfully!';
+                    statusEl.style.color = 'var(--success)';
+                    progressBar.value = 100;
+                    document.getElementById('previewContainer').innerHTML = '';
+                    fileInput.value = '';
+                    loadFileList();
+                    setTimeout(() => {
+                        statusEl.textContent = '';
+                        progressBar.value = 0;
+                    }, 3000);
+                }
+            });
+
+            xhr.addEventListener('error', () => {
+                alert('เกิดข้อผิดพลาดในการอัปโหลด');
+                progressBar.value = 0;
+                statusEl.textContent = '';
+            });
+
+            xhr.open('POST', `${serverUrl}/upload`);
+            xhr.send(formData);
+        } 
         function loadFileList() { 
             const currentUser = document.getElementById('userRole').value;
 
@@ -238,8 +262,19 @@
                             <button class="btn-delete" onclick="deleteFile('${file}')">Delete</button>
                         `; 
                         fileList.appendChild(li); 
+                    });
+                });
+                    
+                    const links = document.querySelectorAll('.file-link');
+                    links.forEach(link => {
+                        link.addEventListener('click', (e) => {
+                            const filename = link.getAttribute('href').split('/').pop();
+                            if (!filename.includes(document.getElementById('userRole').value) && document.getElementById('userRole').value !== 'admin') {
+                                e.preventDefault();
+                                alert("คุณไม่มีสิทธิ์ดาวน์โหลดไฟล์นี้");
+                            }
+                        });
                     }); 
-                }); 
         } 
 
         function deleteFile(filename) {
