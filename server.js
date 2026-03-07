@@ -1,4 +1,4 @@
-const express = require('express'); 
+const express = require('express');      
 const multer = require('multer'); 
 const cors = require('cors'); 
 const fs = require('fs'); 
@@ -42,15 +42,48 @@ const myIP = getLocalIP();
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
-const storage = multer.diskStorage({ 
-    destination: uploadDir, 
-    filename: (req, file, cb) => { 
-        const user = req.body.username || 'unknown';
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
-        cb(null, `${user}-${uniqueSuffix}-${originalName}`); 
-    } 
-}); 
+// 🛠️ ฟังก์ชันไม้ตาย: พยายามลบไฟล์ซ้ำๆ จนกว่า Windows จะยอมปลดล็อค
+const deleteFileWithRetry = (filePath, retries = 5) => {
+    setTimeout(() => {
+        if (fs.existsSync(filePath)) {
+            fs.unlink(filePath, (err) => {
+                if (err) {
+                    // ถ้าไฟล์ยังติดล็อค (EBUSY/EPERM) และยังเหลือโควต้าให้ลองใหม่
+                    if ((err.code === 'EBUSY' || err.code === 'EPERM') && retries > 0) {
+                        console.log(`⏳ ไฟล์ยังถูกล็อคอยู่... จะพยายามลบใหม่ (เหลืออีก ${retries} ครั้ง)`);
+                        deleteFileWithRetry(filePath, retries - 1);
+                    } else {
+                        console.log(`⚠️ ยอมแพ้ ลบไฟล์ขยะไม่สำเร็จ: ${err.message}`);
+                    }
+                } else {
+                    console.log(`🗑️ ลบไฟล์ขยะสำเร็จเรียบร้อย!`);
+                }
+            });
+        }
+    }, 1000); // หน่วงเวลา 1 วินาทีต่อการลอง 1 ครั้ง
+};
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadDir); 
+    },
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname); 
+        const baseName = path.basename(file.originalname, ext); 
+        const username = req.body.username || 'unknown'; 
+        
+        const newFilename = `${username}-${baseName}-${Date.now()}${ext}`;
+        cb(null, newFilename);
+
+        // ✅ ดักจับการยกเลิกที่นี่ที่เดียว
+        req.on('aborted', () => {
+            const fullPath = path.join(uploadDir, newFilename); 
+            console.log(`🚨 ตรวจพบการยกเลิกอัปโหลด! กำลังเริ่มกระบวนการทำลายไฟล์: ${newFilename}`);
+            deleteFileWithRetry(fullPath);
+        });
+    },
+});
+
 const upload = multer({ storage }); 
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
@@ -68,7 +101,6 @@ app.post('/login', (req, res) => {
 // 🎯 API: ดึงรายชื่อ User ทั้งหมด (เฉพาะ Admin)
 app.get('/users', (req, res) => {
     if (req.query.user !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
-    // ส่งรายชื่อทั้งหมดกลับไป (ยกเว้น admin เอง)
     const userList = Object.keys(usersDB).filter(u => u !== 'admin');
     res.json(userList);
 });
@@ -81,11 +113,9 @@ app.delete('/users/:username', async (req, res) => {
     if (targetUser === 'admin') return res.status(400).json({ error: 'ไม่สามารถลบ Admin ได้' });
     if (!usersDB[targetUser]) return res.status(404).json({ error: 'ไม่พบผู้ใช้นี้ในระบบ' });
 
-    // 1. ลบออกจากฐานข้อมูล (แบน)
     delete usersDB[targetUser];
     saveUsers();
 
-    // 2. ลบไฟล์ทั้งหมดของ User นี้
     try {
         const files = fs.readdirSync(uploadDir);
         const userFiles = files.filter(f => f.startsWith(`${targetUser}-`));
@@ -96,10 +126,30 @@ app.delete('/users/:username', async (req, res) => {
     }
 });
 
-// 🎯 API: อัปโหลด
+// 🎯 API: ลงทะเบียนผู้ใช้ใหม่
+app.post('/register', (req, res) => {
+    const { username, password } = req.body;
+    if (usersDB[username]) {
+        return res.status(400).json({ error: 'Username already exists' });
+    }
+    usersDB[username] = password;
+    saveUsers();
+    res.json({ message: 'User registered successfully' });
+});
+
+// 🎯 API: อัปโหลด (เขียนใหม่ให้คลีน ไม่ซ้ำซ้อน)
 app.post('/upload', upload.single('file'), (req, res) => { 
+    // ถ้าลูกค้ากดยกเลิกไประหว่างทาง ให้หยุดทำงานทันที
+    if (req.readableAborted || req.aborted) return; 
+
+    // ป้องกัน Server พัง กรณีไฟล์โหลดไม่เข้า
+    if (!req.file) {
+        return res.status(400).json({ error: 'ไม่พบไฟล์ หรือการอัปโหลดถูกยกเลิก' });
+    }
+
+    // กรณีโหลดเสร็จสมบูรณ์ร้อยเปอร์เซ็นต์
     res.json({ message: 'File uploaded successfully', filename: req.file.filename }); 
-}); 
+});
 
 // 🎯 API: ดึงรายชื่อไฟล์
 app.get('/files', (req, res) => { 

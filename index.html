@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
     <title>Workshop #6: Dark Management</title> 
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <style> 
         :root {
             --bg-main: #0f172a; --bg-card: #1e293b;
@@ -57,6 +58,8 @@
         .file-link:hover { color: #818cf8; }
         .owner-badge { background: rgba(192, 132, 252, 0.2); color: #c084fc; padding: 3px 8px; border-radius: 6px; font-size: 0.7rem; margin-right: 10px; font-weight: bold; border: 1px solid rgba(192, 132, 252, 0.3);}
         #uploadStatus { font-size: 0.8rem; margin-top: 12px; text-align: center; }
+        .link-text { color: #c084fc; text-decoration: none; font-weight: 600; cursor: pointer; }
+        .link-text:hover { text-decoration: underline; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style> 
@@ -69,6 +72,20 @@
         <input type="password" id="password" class="form-control" placeholder="Password">
         <button class="btn-main" onclick="handleLogin()">Sign In</button>
         <p id="loginError" style="color: var(--danger); font-size: 0.85rem; text-align: center; display: none; margin-top: 15px;"></p>
+        <p style="text-align: center; font-size: 0.85rem; margin-top: 20px; color: var(--text-secondary);">
+            ยังไม่มีบัญชี? <span class="link-text" onclick="toggleAuthScreen('register')">สมัครสมาชิก</span>
+        </p>
+    </div>
+
+    <div class="container" id="registerScreen" style="display: none;">
+        <h2>📝 Create Account</h2>
+        <input type="text" id="regUsername" class="form-control" placeholder="ตั้งชื่อ Username ใหม่">
+        <input type="password" id="regPassword" class="form-control" placeholder="ตั้งรหัสผ่าน Password">
+        <button class="btn-main" onclick="handleRegister()">Sign Up</button>
+        <p id="regError" style="color: var(--danger); font-size: 0.85rem; text-align: center; display: none; margin-top: 15px;"></p>
+        <p style="text-align: center; font-size: 0.85rem; margin-top: 20px; color: var(--text-secondary);">
+            มีบัญชีอยู่แล้ว? <span class="link-text" onclick="toggleAuthScreen('login')">เข้าสู่ระบบที่นี่</span>
+        </p>
     </div>
 
     <div class="container" id="appScreen" style="display: none;">
@@ -94,7 +111,8 @@
             <input type="file" id="fileInput" onchange="previewFile()"> 
             <div id="previewContainer"></div> 
             <button class="btn-main" onclick="uploadFile()">Upload Now</button> 
-            <progress id="uploadProgress" value="0" max="100" style="width: 100%; margin-top: 10px; accent-color: #c084fc;"></progress>
+            <progress id="uploadProgress" value="0" max="100" style="width: 50%; margin-top: 10px; accent-color: #c084fc;"></progress>
+            <button id="cancelButton" class="btn-secondary" onclick="cancelUpload()" style="background-color: #f50025; display: none; color: white; padding: 5px 10px; margin-left: 10px;">&times; ยกเลิก</button>
             <p id="uploadStatus"></p> 
         </div>
 
@@ -107,17 +125,65 @@
 
     <script> 
         const serverUrl = window.location.origin; 
-        
+        let uploadController = null; 
+               
+        // 🔄 ฟังก์ชันสลับหน้า Login กับ Register
+        function toggleAuthScreen(screen) {
+            document.getElementById('loginError').style.display = 'none';
+            document.getElementById('regError').style.display = 'none';
+            
+            if (screen === 'login') {
+                document.getElementById('loginScreen').style.display = 'block';
+                document.getElementById('registerScreen').style.display = 'none';
+            } else {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('registerScreen').style.display = 'block';
+            }
+        }
+
         function checkLoginState() {
             const loggedInUser = localStorage.getItem('currentUser');
             if (loggedInUser) {
                 document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('registerScreen').style.display = 'none';
                 document.getElementById('appScreen').style.display = 'block';
                 document.getElementById('displayUser').textContent = loggedInUser;
                 loadFileList();
             } else {
                 document.getElementById('loginScreen').style.display = 'block';
+                document.getElementById('registerScreen').style.display = 'none';
                 document.getElementById('appScreen').style.display = 'none';
+            }
+        }
+
+        // 📝 ฟังก์ชันจัดการการสมัครสมาชิก
+        async function handleRegister() {
+            const user = document.getElementById('regUsername').value.trim();
+            const pass = document.getElementById('regPassword').value.trim();
+            const errorText = document.getElementById('regError');
+
+            if (!user || !pass) {
+                errorText.textContent = "กรุณากรอก Username และ Password ให้ครบถ้วน";
+                errorText.style.display = 'block';
+                return;
+            }
+
+            try {
+                // ยิง API ไปที่เส้นทาง /register
+                const res = await axios.post(`${serverUrl}/register`, { username: user, password: pass });
+                
+                // สมัครสำเร็จ เคลียร์ฟอร์มและเด้งกลับไปหน้า Login
+                alert('✅ สมัครสมาชิกสำเร็จ! คุณสามารถเข้าสู่ระบบได้เลย');
+                document.getElementById('regUsername').value = '';
+                document.getElementById('regPassword').value = '';
+                toggleAuthScreen('login');
+                
+                // กรอก Username ให้ผู้ใช้อัตโนมัติในหน้า Login เพื่อความสะดวก
+                document.getElementById('username').value = user;
+                document.getElementById('password').focus();
+            } catch (err) {
+                errorText.textContent = err.response?.data?.error || "เกิดข้อผิดพลาดในการเชื่อมต่อ";
+                errorText.style.display = 'block';
             }
         }
 
@@ -127,23 +193,12 @@
             const errorText = document.getElementById('loginError');
 
             try {
-                const res = await fetch(`${serverUrl}/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: user, password: pass })
-                });
-                const data = await res.json();
-
-                if (res.ok) {
-                    localStorage.setItem('currentUser', data.username); 
-                    errorText.style.display = 'none';
-                    checkLoginState(); 
-                } else {
-                    errorText.textContent = data.error;
-                    errorText.style.display = 'block';
-                }
+                const res = await axios.post(`${serverUrl}/login`, { username: user, password: pass });
+                localStorage.setItem('currentUser', res.data.username); 
+                errorText.style.display = 'none';
+                checkLoginState(); 
             } catch (err) {
-                errorText.textContent = "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้";
+                errorText.textContent = err.response?.data?.error || "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้";
                 errorText.style.display = 'block';
             }
         }
@@ -168,7 +223,7 @@
             }
         }
 
-        function uploadFile() { 
+        async function uploadFile() { 
             const file = document.getElementById('fileInput').files[0]; 
             const currentUser = localStorage.getItem('currentUser'); 
 
@@ -178,40 +233,65 @@
             formData.append('username', currentUser); 
             formData.append('file', file); 
 
-            const xhr = new XMLHttpRequest();
             const progressBar = document.getElementById('uploadProgress');
             const statusEl = document.getElementById('uploadStatus');
+            const cancelBtn = document.getElementById('cancelButton'); 
 
-            xhr.upload.addEventListener('progress', (e) => {
-                if (e.lengthComputable) {
-                    const percentComplete = (e.loaded / e.total) * 100;
-                    progressBar.value = percentComplete;
-                    statusEl.textContent = Math.round(percentComplete) + '%';
-                    statusEl.style.color = 'var(--text-secondary)';
+            progressBar.value = 0;
+            statusEl.textContent = '0%';
+            statusEl.style.color = 'var(--text-secondary)';
+            cancelBtn.style.display = 'inline-block'; 
+
+            uploadController = new AbortController();
+
+            try {
+                const response = await axios.post(`${serverUrl}/upload`, formData, {
+                    signal: uploadController.signal,
+                    onUploadProgress: (progressEvent) => {
+                        if (progressEvent.lengthComputable) {
+                            const percentComplete = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                            progressBar.value = percentComplete;
+                            statusEl.textContent = percentComplete + '%';
+                        }
+                    }
+                });
+
+                statusEl.textContent = 'Uploaded successfully!';
+                statusEl.style.color = 'var(--success)';
+                progressBar.value = 100;
+                document.getElementById('previewContainer').innerHTML = '';
+                document.getElementById('fileInput').value = '';
+                cancelBtn.style.display = 'none'; 
+                loadFileList();
+                
+                setTimeout(() => { statusEl.textContent = ''; progressBar.value = 0; }, 3000);
+
+            } catch (error) {
+                if (axios.isCancel(error)) {
+                    statusEl.textContent = '❌ Upload canceled';
+                    statusEl.style.color = 'var(--danger)';
+                } else {
+                    statusEl.textContent = '❌ Upload failed: ' + error.message;
+                    statusEl.style.color = 'var(--danger)';
                 }
-            });
+                progressBar.value = 0;
+                cancelBtn.style.display = 'none';
+                setTimeout(() => { statusEl.textContent = ''; }, 3000);
+            } finally {
+                uploadController = null; 
+            }
+        }
 
-            xhr.addEventListener('load', () => {
-                if (xhr.status === 200) {
-                    statusEl.textContent = 'Uploaded successfully!';
-                    statusEl.style.color = 'var(--success)';
-                    progressBar.value = 100;
-                    document.getElementById('previewContainer').innerHTML = '';
-                    document.getElementById('fileInput').value = '';
-                    loadFileList();
-                    setTimeout(() => { statusEl.textContent = ''; progressBar.value = 0; }, 3000);
-                }
-            });
-
-            xhr.open('POST', `${serverUrl}/upload`);
-            xhr.send(formData);
-        } 
-
+        function cancelUpload() {
+            if (uploadController) {
+                uploadController.abort(); 
+            }
+        }
+         
         function loadFileList() { 
             const currentUser = localStorage.getItem('currentUser');
             const adminPanel = document.getElementById('adminPanel');
             
-            // แสดง Admin Panel และดึงรายชื่อ Users
             if (currentUser === 'admin') {
                 adminPanel.style.display = 'block';
                 fetch(`${serverUrl}/users?user=admin`)
@@ -233,12 +313,10 @@
                     fileList.innerHTML = files.length ? '' : '<p style="color:var(--text-secondary); font-size:0.8rem; text-align:center;">ไม่มีไฟล์ในระบบ</p>'; 
                     
                     files.forEach(file => { 
-                        // แยกชื่อเพื่อดึงเจ้าของไฟล์ออกมา
                         const nameParts = file.split('-');
-                        const fileOwner = nameParts[0]; // ส่วนแรกคือชื่อ User
+                        const fileOwner = nameParts[0]; 
                         const displayName = nameParts.length >= 3 ? nameParts.slice(2).join('-') : file;
 
-                        // ถ้าเป็น Admin ให้โชว์ป้ายชื่อเจ้าของไฟล์ด้วย
                         let badgeHtml = '';
                         if (currentUser === 'admin') {
                             badgeHtml = `<span class="owner-badge">👤 ${fileOwner}</span>`;
@@ -270,7 +348,6 @@
             }
         }
 
-        // ฟังก์ชันใหม่สำหรับ Admin แบนผู้ใช้
         function banUser() {
             const targetUser = document.getElementById('userToBan').value;
             const currentUser = localStorage.getItem('currentUser');
@@ -285,7 +362,7 @@
                     })
                     .then((data) => {
                         alert(`✅ สำเร็จ: ${data.message}`);
-                        loadFileList(); // รีเฟรชหน้าจอใหม่
+                        loadFileList(); 
                     })
                     .catch(err => alert("เกิดข้อผิดพลาด: " + err.message));
             }
