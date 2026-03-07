@@ -11,7 +11,7 @@
             --bg-main: #0f172a; --bg-card: #1e293b;
             --accent-gradient: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
             --text-primary: #f8fafc; --text-secondary: #94a3b8;
-            --danger: #fb7185; --success: #4ade80;
+            --danger: #fb7185; --success: #4ade80; --warning: #f59e0b;
         }
         body { 
             font-family: 'Plus Jakarta Sans', sans-serif; 
@@ -48,6 +48,8 @@
         .btn-main:hover { transform: translateY(-2px); box-shadow: 0 15px 20px -3px rgba(80, 96, 242, 0.4); }
         .btn-delete { background: rgba(135, 31, 46, 0.1); color: var(--danger); padding: 8px 16px; font-size: 0.8rem; }
         .btn-delete:hover { background: var(--danger); color: white; }
+        .btn-block { background: rgba(245, 158, 11, 0.1); color: var(--warning); padding: 8px 16px; font-size: 0.8rem; }
+        .btn-block:hover { background: var(--warning); color: white; }
         #previewContainer img { max-width: 100%; border-radius: 12px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.1); }
         ul { list-style: none; padding: 0; margin-top: 20px; } 
         li { 
@@ -98,12 +100,13 @@
         
         <div id="adminPanel" style="display: none; background: rgba(251, 113, 133, 0.1); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(251, 113, 133, 0.3);">
             <h3 style="margin-top: 0; font-size: 1rem; color: var(--danger);">👑 Admin: User Management</h3>
-            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">แบนผู้ใช้และลบไฟล์ทั้งหมดของคนนั้น:</p>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">จัดการบัญชีผู้ใช้งาน (Block ระงับสิทธิ์ / Delete ลบทิ้ง):</p>
             <div style="display: flex; gap: 8px;">
                 <select id="userToBan" class="form-control" style="margin-bottom: 0;">
                     <option value="">กำลังโหลดรายชื่อ...</option>
                 </select>
-                <button class="btn-delete" onclick="banUser()" style="white-space: nowrap;">ลบบัญชี 🚫</button>
+                <button class="btn-block" onclick="toggleBlockUser()" style="white-space: nowrap;">Block 🔒</button>
+                <button class="btn-delete" onclick="banUser()" style="white-space: nowrap;">Delete 🚫</button>
             </div>
         </div>
         
@@ -124,10 +127,9 @@
     </div> 
 
     <script> 
-        const serverUrl = window.location.origin; 
+        const serverUrl = window.location.origin;
         let uploadController = null; 
                
-        // 🔄 ฟังก์ชันสลับหน้า Login กับ Register
         function toggleAuthScreen(screen) {
             document.getElementById('loginError').style.display = 'none';
             document.getElementById('regError').style.display = 'none';
@@ -156,7 +158,6 @@
             }
         }
 
-        // 📝 ฟังก์ชันจัดการการสมัครสมาชิก
         async function handleRegister() {
             const user = document.getElementById('regUsername').value.trim();
             const pass = document.getElementById('regPassword').value.trim();
@@ -169,16 +170,11 @@
             }
 
             try {
-                // ยิง API ไปที่เส้นทาง /register
                 const res = await axios.post(`${serverUrl}/register`, { username: user, password: pass });
-                
-                // สมัครสำเร็จ เคลียร์ฟอร์มและเด้งกลับไปหน้า Login
                 alert('✅ สมัครสมาชิกสำเร็จ! คุณสามารถเข้าสู่ระบบได้เลย');
                 document.getElementById('regUsername').value = '';
                 document.getElementById('regPassword').value = '';
                 toggleAuthScreen('login');
-                
-                // กรอก Username ให้ผู้ใช้อัตโนมัติในหน้า Login เพื่อความสะดวก
                 document.getElementById('username').value = user;
                 document.getElementById('password').focus();
             } catch (err) {
@@ -192,12 +188,14 @@
             const pass = document.getElementById('password').value;
             const errorText = document.getElementById('loginError');
 
-            try {
-                const res = await axios.post(`${serverUrl}/login`, { username: user, password: pass });
-                localStorage.setItem('currentUser', res.data.username); 
-                errorText.style.display = 'none';
-                checkLoginState(); 
-            } catch (err) {
+        try {
+            const res = await axios.post(`${serverUrl}/login`, { username: user, password: pass });
+            localStorage.setItem('currentUser', res.data.username); 
+            localStorage.setItem('currentRole', res.data.role); // 🌟 เพิ่มบรรทัดนี้เข้ามา!
+            errorText.style.display = 'none';
+        checkLoginState(); 
+        } catch (err) {
+                // แสดงผล error ตรงๆ จากเซิร์ฟเวอร์ เช่นข้อความโดนบล็อก
                 errorText.textContent = err.response?.data?.error || "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้";
                 errorText.style.display = 'block';
             }
@@ -288,23 +286,36 @@
             }
         }
          
+     // 🌟 แยกฟังก์ชันดึงรายชื่อ User ออกมาให้เป็นระเบียบ
+        function loadUserList() {
+            const currentUser = localStorage.getItem('currentUser');
+            fetch(`${serverUrl}/users?user=${currentUser}`) // ดึงข้อมูลโดยอ้างอิง User ที่ล็อกอินอยู่
+                .then(res => res.json())
+                .then(users => {
+                    const select = document.getElementById('userToBan');
+                    select.innerHTML = '<option value="">เลือก User ที่ต้องการจัดการ...</option>';
+                    users.forEach(u => {
+                        const statusText = u.status === 'Delete' ? '🔴 Delete' : '🟢 Active';
+                        select.innerHTML += `<option value="${u.username}">👤 ${u.username} (${statusText})</option>`;
+                    });
+                })
+                .catch(err => console.error("โหลดรายชื่อผู้ใช้ไม่สำเร็จ:", err));
+        }
+
         function loadFileList() { 
             const currentUser = localStorage.getItem('currentUser');
+            const currentRole = localStorage.getItem('currentRole'); 
             const adminPanel = document.getElementById('adminPanel');
             
-            if (currentUser === 'admin') {
+            // 1. จัดการแผงควบคุม Admin
+            if (currentRole === 'admin') { 
                 adminPanel.style.display = 'block';
-                fetch(`${serverUrl}/users?user=admin`)
-                    .then(res => res.json())
-                    .then(users => {
-                        const select = document.getElementById('userToBan');
-                        select.innerHTML = '<option value="">เลือก User ที่ต้องการจัดการ...</option>';
-                        users.forEach(u => select.innerHTML += `<option value="${u}">👤 ${u}</option>`);
-                    });
+                loadUserList(); // เรียกใช้ฟังก์ชันที่แยกไว้ด้านบน
             } else {
                 adminPanel.style.display = 'none';
             }
 
+            // 2. จัดการรายการไฟล์
             fetch(`${serverUrl}/files?user=${currentUser}`) 
                 .then(res => res.json()) 
                 .then(files => { 
@@ -318,7 +329,7 @@
                         const displayName = nameParts.length >= 3 ? nameParts.slice(2).join('-') : file;
 
                         let badgeHtml = '';
-                        if (currentUser === 'admin') {
+                        if (currentRole === 'admin') { // 🌟 แก้เป็นเช็คจาก Role แทน
                             badgeHtml = `<span class="owner-badge">👤 ${fileOwner}</span>`;
                         }
 
@@ -332,8 +343,8 @@
                         `; 
                         fileList.appendChild(li); 
                     });
-                });
-        } 
+                }); 
+        }
 
         function deleteFile(filename) {
             const currentUser = localStorage.getItem('currentUser');
@@ -348,13 +359,31 @@
             }
         }
 
+        // ฟังก์ชันใหม่: ระงับสิทธิ์ (Block / Unblock)
+        function toggleBlockUser() {
+            const targetUser = document.getElementById('userToBan').value;
+            const currentUser = localStorage.getItem('currentUser');
+
+            if (!targetUser) return alert('กรุณาเลือก User ที่ต้องการจัดการ');
+
+            if (confirm(`คุณต้องการ "สลับสถานะ (Block/Unblock)" บัญชีของ ${targetUser} ใช่หรือไม่?`)) {
+                // ยิง API แบบ PUT ไปสลับสถานะ
+                axios.put(`${serverUrl}/users/${targetUser}/toggle-block?user=${currentUser}`)
+                    .then((res) => {
+                        alert(`✅ ${res.data.message}`);
+                        loadFileList(); // รีเฟรชรายชื่อใน Dropdown
+                    })
+                    .catch(err => alert("เกิดข้อผิดพลาด: " + (err.response?.data?.error || err.message)));
+            }
+        }
+
         function banUser() {
             const targetUser = document.getElementById('userToBan').value;
             const currentUser = localStorage.getItem('currentUser');
 
-            if (!targetUser) return alert('กรุณาเลือก User ที่ต้องการแบน');
+            if (!targetUser) return alert('กรุณาเลือก User ที่ต้องการจัดการ');
 
-            if (confirm(`⚠️ คำเตือน!\nคุณแน่ใจหรือไม่ที่จะ "แบนบัญชี ${targetUser}" และลบไฟล์ทั้งหมดของเขา?\n(การกระทำนี้ไม่สามารถกู้คืนได้)`)) {
+            if (confirm(`⚠️ คำเตือน!\nคุณแน่ใจหรือไม่ที่จะ "ลบบัญชี ${targetUser}" และไฟล์ทั้งหมด?\n(การกระทำนี้ไม่สามารถกู้คืนได้)`)) {
                 fetch(`${serverUrl}/users/${targetUser}?user=${currentUser}`, { method: 'DELETE' })
                     .then(async (res) => {
                         if (!res.ok) throw new Error((await res.json()).error);
