@@ -16,5 +16,11 @@
         "password": "pass2",
         "status": "active",
         "role": "user"
+    },
+    {
+        "username": "อรว",
+        "password": "อรวๅ/-",
+        "status": "blocked",
+        "role": "user"
     }
 ]
