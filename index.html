@@ -299,7 +299,7 @@
                     const select = document.getElementById('userToBan');
                     select.innerHTML = '<option value="">เลือก User ที่ต้องการจัดการ...</option>';
                     users.forEach(u => {
-                        const statusText = u.status === 'Delete' ? '🔴 Delete' : '🟢 Active';
+                        const statusText = u.status === 'blocked' ? '🔴 blocked' : '🟢 Active';
                         select.innerHTML += `<option value="${u.username}">👤 ${u.username} (${statusText})</option>`;
                     });
                 })

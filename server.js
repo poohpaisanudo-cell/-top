@@ -137,7 +137,7 @@ app.get('/users', (req, res) => {
     let users = getUsers();
     const userList = users.filter(u => u.username !== req.query.user).map(u => ({
         username: u.username,
-        status: u.status || 'active',
+        status: u.status === 'blocked' ? 'blocked' : 'active',
         role: u.role
     }));
     
