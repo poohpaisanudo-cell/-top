@@ -22,5 +22,11 @@
         "password": "อรวๅ/-",
         "status": "blocked",
         "role": "user"
+    },
+    {
+        "username": "EzGuiy",
+        "password": "pass1",
+        "status": "active",
+        "role": "user"
     }
 ]
