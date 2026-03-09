@@ -26,7 +26,7 @@
         } 
         h2 { 
             margin-top: 0; font-size: 1.5rem; text-align: center; margin-bottom: 1.5rem;
-            background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background: var(--accent-gradient); -webkit-background: text; -webkit-text-fill-color: transparent;
         }
         input.form-control, select.form-control {
             width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px;
@@ -133,7 +133,7 @@
     <script> 
         const serverUrl = window.location.origin;
         let uploadController = null; 
-               
+// สลับหน้าจอ Login/Register               
         function toggleAuthScreen(screen) {
             document.getElementById('loginError').style.display = 'none';
             document.getElementById('regError').style.display = 'none';
@@ -146,7 +146,7 @@
                 document.getElementById('registerScreen').style.display = 'block';
             }
         }
-
+// ตรวจสอบสถานะล็อกอินและแสดงหน้าจอที่เหมาะสม
         function checkLoginState() {
             const loggedInUser = localStorage.getItem('currentUser');
             if (loggedInUser) {
@@ -204,14 +204,14 @@
                 errorText.style.display = 'block';
             }
         }
-
+// ฟังก์ชัน Logout
         function handleLogout() {
             localStorage.removeItem('currentUser'); 
             document.getElementById('username').value = '';
             document.getElementById('password').value = '';
             checkLoginState();
         }
-
+// แสดงไฟล์ตัวอย่างก
         function previewFile() {
             const file = document.getElementById('fileInput').files[0];
             const previewContainer = document.getElementById('previewContainer');
@@ -224,7 +224,7 @@
                 previewContainer.innerHTML = `<p style="color: var(--text-secondary); font-size: 0.8rem;">📄 ${file.name}</p>`;
             }
         }
-
+// อัพโหลดไฟล์
         async function uploadFile() { 
             const file = document.getElementById('fileInput').files[0]; 
             const currentUser = localStorage.getItem('currentUser'); 
@@ -305,7 +305,7 @@
                 })
                 .catch(err => console.error("โหลดรายชื่อผู้ใช้ไม่สำเร็จ:", err));
         }
-
+// จัดการและแสดงรายการไฟล์
         function loadFileList() { 
             const currentUser = localStorage.getItem('currentUser');
             const currentRole = localStorage.getItem('currentRole'); 
@@ -382,7 +382,7 @@
                     });
                 }); 
         }
-
+// ลบไฟล์
         function deleteFile(filename) {
             const currentUser = localStorage.getItem('currentUser');
             if (confirm(`คุณต้องการลบไฟล์นี้ใช่หรือไม่?`)) {
@@ -413,7 +413,7 @@
                     .catch(err => alert("เกิดข้อผิดพลาด: " + (err.response?.data?.error || err.message)));
             }
         }
-
+// แบนผู้ใช้ (Delete)
         function banUser() {
             const targetUser = document.getElementById('userToBan').value;
             const currentUser = localStorage.getItem('currentUser');
