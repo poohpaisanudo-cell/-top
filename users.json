@@ -28,5 +28,11 @@
         "password": "pass1",
         "status": "active",
         "role": "user"
+    },
+    {
+        "username": "a",
+        "password": "pass1",
+        "status": "active",
+        "role": "user"
     }
 ]
